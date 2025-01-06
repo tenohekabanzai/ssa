@@ -52,17 +52,17 @@ const formatDate = (date) => {
     const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-based
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-}; 
+};
 
 function deleteFiles(directory) {
     fsExtra.readdir(directory, (err, files) => {
-        if(err){
+        if (err) {
             console.error('Error reading directory:', err);
             return;
         }
-        for(const file of files){
+        for (const file of files) {
             const filePath = path.join(directory, file);
-            fs.unlink(filePath,(err)=>{
+            fs.unlink(filePath, (err) => {
                 if (err) {
                     console.error(`Error deleting file ${file}:`, err);
                 } else {
@@ -73,12 +73,12 @@ function deleteFiles(directory) {
     });
 }
 
-const generatePdfs = async(data)=>{
+const generatePdfs = async (data) => {
     for (const i of data) {
-        
+
         i.paymentDate = formatDate(i.paymentDate);
         i.dateOfJoin = formatDate(i.dateOfJoin);
-    
+
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
 
@@ -95,15 +95,99 @@ const generatePdfs = async(data)=>{
     }
 }
 
-const createHTML=(htmlfile,i)=>{
+function generateFilteredEarningsDeductionsTable(earnings, deductions) {
+    let html = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Earnings</th>
+                    <th>Amount</th>
+                    <th>Deductions</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    const filteredEarnings = Object.entries(earnings).filter(([key, value]) => value !== 0);
+    const filteredDeductions = Object.entries(deductions).filter(([key, value]) => value !== 0);
+
+    const maxLength = Math.max(filteredEarnings.length, filteredDeductions.length);
+
+    let totalEarnings = 0;
+    let totalDeductions = 0;
+
+    for (let i = 0; i < maxLength; i++) {
+        const earning = filteredEarnings[i] || [];
+        const deduction = filteredDeductions[i] || [];
+
+        const earningAmount = earning[1] !== undefined ? earning[1] : 0;
+        const deductionAmount = deduction[1] !== undefined ? deduction[1] : 0;
+
+        totalEarnings += earningAmount;
+        totalDeductions += deductionAmount;
+
+        html += `
+            <tr>
+                <td>${earning[0] || ''}</td>
+                <td>${earningAmount || ''}</td>
+                <td>${deduction[0] || ''}</td>
+                <td>${deductionAmount || ''}</td>
+            </tr>`;
+    }
+
+    const totalIncome = totalEarnings - totalDeductions;
+
+    html += `
+            <tr>
+                <td><strong>Total Earnings</strong></td>
+                <td><strong>${totalEarnings}</strong></td>
+                <td><strong>Total Deductions</strong></td>
+                <td><strong>${totalDeductions}</strong></td>
+            </tr>
+            <tr>
+                <td colspan="3"><strong>Total Income</strong></td>
+                <td><strong>${totalIncome}</strong></td>
+            </tr>
+        </tbody>
+    </table>`;
+
+    return html;
+}
+
+
+
+const createHTML = (htmlfile, i) => {
     const date = new Date();
-            const monthNames = [
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
-            ];
-            const currentMonth = monthNames[date.getMonth()];
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    const currentMonth = monthNames[date.getMonth()];
+
+    const ear = {
+        'BASIC': i.basic,
+        'DA': i.da,
+        'HRA': i.hra,
+        'Conveyance': i.conveyance,
+        'Medical': i.medical,
+        'Children': i.children,
+        'Bonus': i.bonus,
+        'OT': i.ot,
+        'VariablePay': i.variablePay, 
+        'Incentive': i.incentive
+    };
+
+    const ded = {
+        'PROFESSIONAL TAX': i.profTax,
+        'TDS': i.tds,
+        'Loan Deduction': i.loanDeduction,
+        'Security': i.security
+    };
+
+    const table = generateFilteredEarningsDeductionsTable(ear,ded);
+
     htmlfile = `
-                                               <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -116,7 +200,6 @@ const createHTML=(htmlfile,i)=>{
             padding: 0;
             background-color: #f9f9f9;
         }
-
         .container {
             width: 800px;
             margin: 20px auto;
@@ -125,60 +208,46 @@ const createHTML=(htmlfile,i)=>{
             border: 2px solid black;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
         .header {
             text-align: center;
             margin-bottom: 20px;
         }
-
         .header img {
             max-width: 150px;
             height: 120px;
             margin-bottom: 10px;
             border: 2px solid black;
         }
-
         .header h1 {
             font-size: 1.6em; /* Reduced by 20% */
         }
-
         .header h2 {
             font-size: 1.28em; /* Reduced by 20% */
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
-
         table th, table td {
             border: 2px solid black;
             padding: 6px; /* Reduced padding to match text scaling */
             text-align: left;
             font-size: 0.8em; /* Reduced font size by 20% */
         }
-
         table th {
             background-color: #f4f4f4;
             font-weight: bold;
         }
-
         .footer {
             text-align: center;
             font-size: 11.2px; /* Reduced by 20% */
             color: #555;
         }
-
         .highlight {
             font-weight: bold;
             color: #333;
         }
-
-        .footer td {
-            font-size: 0.8em; /* Reduced font size by 20% */
-        }
-
     </style>
 </head>
 <body>
@@ -191,106 +260,14 @@ const createHTML=(htmlfile,i)=>{
         </div>
 
         <table>
-            <tr>
-                <td>Employee Type: <span class="highlight">${i.type}</span></td>
-                <td>Date of Join: <span class="highlight">${i.dateOfJoin}</span></td>
-            </tr>
+            
             <tr>
                 <td>Employee Name: <span class="highlight">${i.name}</span></td>
                 <td>Email: <span class="highlight">${i.email}</span></td>
             </tr>
-            <tr>
-                <td>Gross Salary: <span class="highlight">${i.grossSalary || 0}</span></td>
-                <td>Fixed Pay: <span class="highlight">${i.fixPay}</span></td>
-            </tr>
-            <tr>
-                <td>Designation: <span class="highlight">${i.designation || "Default Designation"}</span></td>
-                <td>A/c. No.: <span class="highlight">${i.accountNo || '#123456'}</span></td>
-            </tr>
         </table>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Earnings</th>
-                    <th>Amount</th>
-                    <th>Deductions</th>
-                    <th>Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>BASIC</td>
-                    <td>${i.basic}</td>
-                    <td>PROFESSIONAL TAX</td>
-                    <td>${i.profTax}</td>
-                </tr>
-                <tr>
-                    <td>DA</td>
-                    <td>${i.da}</td>
-                    <td>TDS</td>
-                    <td>${i.tds}</td>
-                </tr>
-                <tr>
-                    <td>HRA</td>
-                    <td>${i.hra}</td>
-                    <td>Loan Deduction</td>
-                    <td>${i.loanDeduction}</td>
-                </tr>
-                <tr>
-                    <td>Conveyance</td>
-                    <td>${i.conveyance}</td>
-                    <td>Security</td>
-                    <td>${i.security}</td>
-                </tr>
-                <tr>
-                    <td>Medical</td>
-                    <td>${i.medical}</td>
-                    <td>Total Deduction</td>
-                    <td>${i.deduction}</td>
-                </tr>
-                <tr>
-                    <td>Children</td>
-                    <td>${i.children}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>Bonus</td>
-                    <td>${i.bonus}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>OT</td>
-                    <td>${i.bonus}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>Variable Pay</td>
-                    <td>${i.variablePay}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>Incentive</td>
-                    <td>${i.incentive}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <th>Total Earnings</th>
-                    <th>${i.totalEarning}</th>
-                    <th>Total Deductions</th>
-                    <th>${i.total}</th>
-                </tr>
-                <tr>
-                    <th colspan="2">NET PAY</th>
-                    <th colspan="2">${i.net}</th>
-                </tr>
-            </tbody>
-        </table>
+         ${table}
 
         <table>
             <tr>
@@ -312,15 +289,23 @@ const createHTML=(htmlfile,i)=>{
                 <td colspan="2" style="text-align: center;">Thank You for your efforts</td>
             </tr>
         </table>
+
     </div>
+
+    <!-- Render row function -->
+    <script type="text/javascript">
+      function renderRow(label, value) {
+          const amountCell = value !== 0 ? value : ''; // Render value if not zero; otherwise, render an empty cell
+          return \`<tr><td>\${label}</td><td>\${amountCell}</td><td></td><td></td></tr>\`; // Return a table row with earnings or deductions
+      }
+    </script>
+
 </body>
-</html>
-
-
-                        `;
-
-                        return htmlfile;
+</html>`;
+   
+    return htmlfile;
 }
+
 
 const byptmapping = {
     A: 'type',                // Type
@@ -377,4 +362,4 @@ const byptmapping = {
     BA: 'remark'               // Remark  
 }
 
-module.exports = {sendPdfEmail,formatDate,deleteFiles,createHTML,byptmapping};
+module.exports = { sendPdfEmail, formatDate, deleteFiles, createHTML, byptmapping };
