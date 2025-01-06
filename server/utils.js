@@ -154,8 +154,6 @@ function generateFilteredEarningsDeductionsTable(earnings, deductions) {
     return html;
 }
 
-
-
 const createHTML = (htmlfile, i) => {
     const date = new Date();
     const monthNames = [
@@ -305,7 +303,6 @@ const createHTML = (htmlfile, i) => {
    
     return htmlfile;
 }
-
 
 const byptmapping = {
     A: 'type',                // Type

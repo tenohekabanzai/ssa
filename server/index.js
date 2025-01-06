@@ -110,8 +110,11 @@ app.post('/uploadexcel', upload.single('file'), async (req, res) => {
                 },
                 columnToKey: byptmapping
             });
-
-            data = excelData.Sheet1;
+            
+            
+            data = Object.values(excelData)[0];
+            // console.log(data);
+        
         }
         fsExtra.remove(filePath);
         // console.log(data);

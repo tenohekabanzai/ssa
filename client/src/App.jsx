@@ -150,7 +150,7 @@ function App() {
                 disabled={loading}
                 className="button"
               >
-                {i.name} {i.email}
+                {i.name}
               </button>
             ))}
           </ul>
