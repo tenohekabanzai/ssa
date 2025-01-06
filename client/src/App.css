@@ -1,21 +1,115 @@
+/* General Root */
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  background-color: #121212; /* Dark background */
+  color: #e0e0e0; /* Light text */
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+h1 {
+  font-size: 2.5rem;
+  color: #e0e0e0; /* Light text color */
+  margin-bottom: 1.5rem;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+
+.card {
+  padding: 2em;
+  background-color: #1e1e1e; /* Dark card background */
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  margin-bottom: 2rem;
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+
+input[type="file"] {
+  padding: 1rem;
+  font-size: 1rem;
+  border-radius: 5px;
+  border: 1px solid #444; /* Darker border */
+  background-color: #333; /* Dark background */
+  color: #e0e0e0; /* Light text */
+  margin-bottom: 1rem;
+}
+
+input[type="file"]:disabled {
+  background-color: #222; /* Disabled input background */
+  border-color: #555; /* Disabled border */
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  background-color: #646cff; /* Blue button color */
+  color: #e0e0e0; /* Light text */
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin: 0.5rem;
+}
+
+button:disabled {
+  background-color: #444; /* Disabled button color for blue button */
+  cursor: not-allowed;
+  color: #777; /* Dimmed text for disabled button */
+}
+
+button:hover:not(:disabled) {
+  background-color: #5a58e2; /* Hover effect */
+}
+
+button.button {
+  padding: 0.75rem 2rem;
+  background-color: #4CAF50; /* Green button color */
+  color: white;
+  font-size: 1rem;
+}
+
+button.button:disabled {
+  background-color: #333; /* Disabled green button color */
+  color: #555; /* Dimmed text for disabled green button */
+}
+
+button.button:hover:not(:disabled) {
+  background-color: #45a049; /* Green hover effect */
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+ul li {
+  margin-bottom: 1rem;
+}
+
+h5 {
+  font-size: 1rem;
+  color: #b0b0b0; /* Lighter text color for smaller text */
+}
+
+.read-the-docs {
+  color: #888; /* Lighter gray for docs text */
+}
+
+/* Loading styles */
+h1.loading {
+  font-size: 1.5rem;
+  color: #f39c12; /* Bright yellow for loading */
+  font-weight: bold;
+}
+
+/* Adjustments for file input hover */
+input[type="file"]:hover {
+  background-color: #444; /* Darker hover state for file input */
+}
+
+/* Reduced Motion Animation */
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
 }
 
 @keyframes logo-spin {
@@ -25,18 +119,4 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
