@@ -17,14 +17,14 @@ function App() {
       const resp_json = await resp.json();
       // console.log(resp_json.msg)
       setData(resp_json.msg)
+      console.log(resp_json.msg);
     } catch (error) {
       console.log(error);
     }
   }
 
-  
   useEffect(() => {
-      checkFile()
+      checkFile().then(i=> console.log("checked file"))
   }, []);
 
   const uploadExcel = async()=>{
@@ -142,43 +142,43 @@ function App() {
     }
 };
 
-return (
-  <>
-      <h1>Salary Slip Automator</h1>
-      {loading && <h1>Loading...</h1>}
-      {data && Array.isArray(data) && (
-          <ul>
-              {data.map((i, index) => (
-                  <button 
-                      key={index} 
-                      onClick={() => downloadSlip(i)} 
-                      disabled={loading} 
-                  >
-                      {i.name} {i.email}
-                  </button>
-              ))}
-          </ul>
-      )}
-      <div className="card">
-          <input 
-              type="file" 
-              name="file" 
-              onChange={handleFileChange}  
-              ref={fileInputRef} 
-              disabled={loading} 
-          />
-          <button 
-              onClick={uploadExcel} 
-              disabled={loading} 
-          >
-              Upload Excel File
-          </button>
-      </div>
-      <button onClick={sendEmails} disabled={loading}>Send Emails</button>
-      <button onClick={downloadZip} disabled={loading}>Download all slips(zip)</button>
-      {data ? <h5>File is uploaded to server</h5> : <h5>File is not uploaded to server</h5>}
-  </>
-);
+  return (
+    <>
+        <h1>Salary Slip Automator</h1>
+        {loading && <h1>Loading...</h1>}
+        {data && Array.isArray(data) && (
+            <ul>
+                {data.map((i, index) => (
+                    <button 
+                        key={index} 
+                        onClick={() => downloadSlip(i)} 
+                        disabled={loading} 
+                    >
+                        {i.name} {i.email}
+                    </button>
+                ))}
+            </ul>
+        )}
+        <div className="card">
+            <input 
+                type="file" 
+                name="file" 
+                onChange={handleFileChange}  
+                ref={fileInputRef} 
+                disabled={loading} 
+            />
+            <button 
+                onClick={uploadExcel} 
+                disabled={loading || file == null} 
+            >
+                Upload Excel File
+            </button>
+        </div>
+      <button onClick={sendEmails} disabled={loading || !data}>Send Emails</button>
+        <button onClick={downloadZip} disabled={loading || !data}>Download all slips (zip)</button>
+        {data ? <h5>File is uploaded to server</h5> : <h5>File is not uploaded to server</h5>}
+    </>
+  );
 
 }
 
