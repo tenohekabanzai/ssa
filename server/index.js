@@ -17,6 +17,7 @@ app.use(cors());
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 var data = null;
@@ -121,28 +122,10 @@ app.post('/uploadexcel', upload.single('file'), async (req, res) => {
 
 })
 
-async function deleteAllPdfs() {
-    try {
-        const pdfDir = path.join(__dirname, 'uploads');
-        const files = await fsExtra.readdir(pdfDir);
-
-        // Filter for PDF files and delete them
-        for (const file of files) {
-            if (path.extname(file) === '.pdf') {
-                const filePath = path.join(pdfDir, file);
-                await fsExtra.remove(filePath);  // Delete the PDF file
-                console.log(`Deleted PDF: ${file}`);
-            }
-        }
-    } catch (error) {
-        console.error('Error deleting PDF files:', error);
-    }
-}
-
+// api endpount to download all salary slips zipfiles on client-side
 app.get('/downloadZip', async (req, res) => {
-
     try {
-
+        // Generate PDFs
         for (const i of data) {
             i.paymentDate = formatDate(i.paymentDate);
             i.dateOfJoin = formatDate(i.dateOfJoin);
@@ -150,13 +133,10 @@ app.get('/downloadZip', async (req, res) => {
             const browser = await puppeteer.launch();
             const page = await browser.newPage();
 
-            let htmlfile = "";
-            htmlfile = createHTML(htmlfile, i);
-
+            let htmlfile = createHTML("", i); 
             await page.setContent(htmlfile);
             const fn = `${i.email}_${i.name}.pdf`;
             const outputPath = path.join(__dirname, 'uploads', fn);
-            const fp = 'uploads/' + fn;
             await page.pdf({ path: outputPath, format: 'A4' });
 
             console.log('PDF generated for', `${i.name}`);
@@ -164,45 +144,90 @@ app.get('/downloadZip', async (req, res) => {
         }
 
         const zip = archiver('zip', {
-            zlib: { level: 9 } // Sets the compression level
+            zlib: { level: 9 } 
         });
-
-        // Set the response headers
-        res.attachment('pdfs.zip'); // Set the name of the zip file
-        res.setHeader('Content-Type', 'application/zip');
-
-        // Pipe the zip stream to the response
-        zip.pipe(res);
-
-        // Specify the directory containing your PDF files
-        const pdfDir = path.join(__dirname, 'uploads');
-
-        // Append each PDF file in the directory to the zip
-        fsExtra.readdir(pdfDir, (err, files) => {
-            if (err) {
-                console.error('Error reading directory:', err);
-                return res.status(500).send('Internal Server Error');
-            }
-
-            // Filter for PDF files and append them to the zip
-            files.forEach(file => {
-                if (path.extname(file) === '.pdf') {
-                    zip.file(path.join(pdfDir, file), { name: file });
-                }
-            });
-
-            // Finalize the zip file (this is important)
-            zip.finalize().catch(err => {
-                console.error('Error finalizing ZIP:', err);
-                return res.status(500).send('Internal Server Error');
-            });
-        });
-        console.log("Zip generated");
 
         
+        res.attachment('pdfs.zip'); 
+        res.setHeader('Content-Type', 'application/zip');
+
+        
+        zip.pipe(res);
+
+        const pdfDir = path.join(__dirname, 'uploads');
+
+        const files = await fsExtra.readdir(pdfDir);
+        
+        files.forEach(file => {
+            if (path.extname(file) === '.pdf') {
+                zip.file(path.join(pdfDir, file), { name: file });
+                const filePath = path.join(pdfDir, file);
+                    fsExtra.unlink(filePath, (err) => {
+                        if (err) {
+                            console.error(`Error deleting file ${file}:`, err);
+                        } else {
+                            console.log(`Deleted file: ${file}`);
+                        }
+                    });
+            }
+        });
+
+        zip.finalize().then(() => {
+            console.log("Zip generated");
+        }).catch(err => {
+            console.error('Error finalizing ZIP:', err);
+            return res.status(500).send('Internal Server Error');
+        });
+
     } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// api endpount to download one salary slip pdf on client-side
+app.post('/downloadOne', async (req, res) => {
+    const { name, email } = req.body;
+    const user = data.find(i => i.email === email);
+    
+    if (!user) {
+        return res.status(404).json({ msg: "Email not found" });
+    }
+
+    user.paymentDate = formatDate(user.paymentDate);
+    user.dateOfJoin = formatDate(user.dateOfJoin);
+
+    try {
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        const htmlfile = createHTML("", user);
+        
+        await page.setContent(htmlfile);
+
+        const fn = `${user.email}_${user.name}.pdf`;
+        const outputPath = path.join(__dirname, '/uploads', fn);
+
+        await page.pdf({ path: outputPath, format: 'A4' });
+        console.log('PDF generated for', user.name);
+        await browser.close();
+
+        return res.download(outputPath, fn, (err) => {
+            if (err) {
+                console.error('Error sending file:', err);
+                res.status(500).send('Error sending file');
+            } else {
+                fsExtra.unlink(outputPath, (unlinkErr) => {
+                    if (unlinkErr) {
+                        console.error('Error deleting file:', unlinkErr);
+                    } else {
+                        console.log('PDF file deleted successfully');
+                    }
+                });
+            }
+        });
+    } catch (err) {
+        console.error('Error generating PDF:', err);
+        return res.status(500).send('Error generating PDF');
+    }
+});
 

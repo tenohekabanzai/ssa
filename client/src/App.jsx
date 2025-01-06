@@ -82,7 +82,6 @@ function App() {
   const downloadZip = async () => {
     try {
       setLoading(true);
-  
       const response = await fetch('http://localhost:5001/downloadZip', {
         method: 'GET',
       });
@@ -96,40 +95,91 @@ function App() {
       link.href = url;
       link.download = 'salary_slip_pdfs.zip'; 
       document.body.appendChild(link);
-      link.click(); // Programmatically click the link to start the download
-      document.body.removeChild(link);
+      link.click();       document.body.removeChild(link);
   
-      // Revoke the Object URL to release memory
       window.URL.revokeObjectURL(url);
   
-      setLoading(false); // Stop loading state
+      setLoading(false); 
     } catch (error) {
       console.log('Error downloading ZIP:', error);
-      setLoading(false); // Stop loading state
+      setLoading(false); 
     }
   };
 
+  const downloadSlip = async (i) => {
 
-  return (
-    <>
+    const data = {
+        name: i.name,
+        email: i.email
+    };
+
+    try {
+        setLoading(true); 
+        const resp = await fetch('http://localhost:5001/downloadOne', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (!resp.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const blob = await resp.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${i.email}_${i.name}.pdf`; 
+        document.body.appendChild(a); 
+        a.click(); 
+        a.remove(); 
+        window.URL.revokeObjectURL(url);
+        
+        setLoading(false); 
+    } catch (error) {
+        console.error('Error downloading PDF:', error);
+        setLoading(false);   
+    }
+};
+
+return (
+  <>
       <h1>Salary Slip Automator</h1>
-      {loading ? <h1>Loading!!!!!!!!!!!!!!</h1>:<></>}
+      {loading && <h1>Loading...</h1>}
       {data && Array.isArray(data) && (
-        <ul>
-          {data.map((i, index) => (
-            <li key={index}>{i.name} {i.email}</li>
-          ))}
-        </ul>
+          <ul>
+              {data.map((i, index) => (
+                  <button 
+                      key={index} 
+                      onClick={() => downloadSlip(i)} 
+                      disabled={loading} 
+                  >
+                      {i.name} {i.email}
+                  </button>
+              ))}
+          </ul>
       )}
       <div className="card">
-      <input type="file" name="file" onChange={handleFileChange}  ref={fileInputRef}/>
-      <button onClick={uploadExcel}>Upload Excel File</button>
+          <input 
+              type="file" 
+              name="file" 
+              onChange={handleFileChange}  
+              ref={fileInputRef} 
+              disabled={loading} 
+          />
+          <button 
+              onClick={uploadExcel} 
+              disabled={loading} 
+          >
+              Upload Excel File
+          </button>
       </div>
-      <button onClick={sendEmails}>Send Emails</button>
-      <button onClick={downloadZip}>Download all slips(zip)</button>
+      <button onClick={sendEmails} disabled={loading}>Send Emails</button>
+      <button onClick={downloadZip} disabled={loading}>Download all slips(zip)</button>
       {data ? <h5>File is uploaded to server</h5> : <h5>File is not uploaded to server</h5>}
-    </>
-  )
+  </>
+);
+
 }
 
 export default App
